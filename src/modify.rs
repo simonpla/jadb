@@ -1,13 +1,21 @@
 /*
 TABLE
 |----------|
-|2|hi|94725| <- ROW
-|19|6|FIELD|
+|a|79|94725| <- ROW
+|hi|6|FIELD|
 |----------|
+
+FORMATTING
+t = text
+n = number
+d = date
+\n = delimiter
+|o = old field content
 */
 
 use std::fs;
 use chrono;
+use std::path::Path;
 
 pub struct Table<'a> { // Table
     pub path: &'a str, // name of db, absolute or relative path
@@ -36,6 +44,25 @@ impl Table<'_> {
     }
     pub fn write(content: &str, table: Table, row: i32) -> i8 {
         println!("Writing {} to table path {} in Row {}", content, table.path, row);
+        let path = format!("{}/{}", table.path, row);
+        if Path::new(&path).exists() {
+            println!("exists");
+            let mut con_w_form: String = String::from("");
+            let mut con_str: Vec<&str> = content.split("\n").collect();
+            let old_row = fs::read_to_string(&path).expect("Couldn't read old Row contents");
+            let con_old_row: Vec<&str> = old_row.split("\n").collect(); // includes metadata at index 0
+            for i in 0..con_str.len() {
+                if con_str[i] == "|o" {
+                    con_str[i] = con_old_row[i];
+                    println!("old content ");
+                }
+                con_w_form.push_str(con_str[i]);
+                con_w_form.push_str("\n");
+            }
+            fs::write(&path, con_w_form).expect("Couldn't write Row");
+        } else {
+            fs::write(&path, content).expect("Couldn't write Row");
+        }
         0 // if ok return 0
     }
 }
