@@ -6,12 +6,11 @@ fn main() {
     let my_table = modify::Table {
         path: path,
     };
-    println!(" {} {} {} {} {} {}",
+    println!(" {} {} {} {}",
     // modify::Table::create(path),
     modify::Table::write(rlylongstr, my_table, 1),
     modify::Row::length(modify::LenType::Fields),
     modify::Row::length(modify::LenType::Characters),
-    modify::Row::hash(),
-    modify::Field::length(),
-    modify::Field::hash());
+    modify::Field::length()
+    );
 }
