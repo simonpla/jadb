@@ -6,12 +6,16 @@ fn main() {
     let my_table = jadb::Table {
         path: path,
     };
-    println!(" {} {:?} {} {} {}",
+    let my_row = jadb::Row {
+        pos: 1,
+    };
+    println!(/*" {} {:?} {} {} {}*/"{}",
     // modify::Table::create(path),
-    jadb::Table::write(rlylongstr, my_table, 1),
+    /*jadb::Table::write(rlylongstr, my_table, 1),
     jadb::Table::read(my_table, 1),
     jadb::Row::length(jadb::LenType::Fields),
     jadb::Row::length(jadb::LenType::Characters),
-    jadb::Field::length()
+    jadb::Field::length(),*/
+    my_row.shash(my_table)
     );
 }
