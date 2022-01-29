@@ -14,15 +14,19 @@ fn main() {
     };
     if cfg!(debug_assertions) {
         println!(
-            "{} {}",
-            my_row.shash_debug(my_table, "a"),
-            my_field.shash_debug(my_table, my_row, "a")
+            "{} {} {} {}",
+            my_row.shash_debug(my_table, "ghj"),
+            my_field.shash_debug(my_table, my_row, "ghj"),
+            my_row.length(my_table, jadb::LenType::Characters),
+            my_field.length(my_table, my_row)
         );
     } else {
         println!(
-            "{} {}",
+            "{} {} {} {}",
             my_row.shash(my_table),
-            my_field.shash(my_table, my_row)
+            my_field.shash(my_table, my_row),
+            my_row.length(my_table, jadb::LenType::Characters),
+            my_field.length(my_table, my_row)
         );
     }
 }
