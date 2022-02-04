@@ -38,29 +38,33 @@ pub struct Field {
 }
 
 impl Table<'_> {
-    pub fn create(path: &str) -> i8 {
-        if path.is_empty() { // can't create table without name
+    pub fn create(&self) -> i8 {
+        if self.path.is_empty() { // can't create table without name
             println!("no table path given, cannot create table");
             return 1;
         }
-        println!("creating in {}", path);
-        let mut name = path.clone();
-        if path.contains("/") || path.contains(r#"\"#) { // get actual name of table without rest of path
-            let (_, substr) = path.rsplit_once('/').unwrap();
+        if Path::new(self.path).exists() {
+            println!("table already exists at given path");
+            return 1;
+        }
+        println!("creating in {}", self.path);
+        let mut name = self.path.clone();
+        if self.path.contains("/") || self.path.contains(r#"\"#) { // get actual name of table without rest of path
+            let (_, substr) = self.path.rsplit_once('/').unwrap();
             name = substr;
         }
-        let info = format!("jadb database\ntablename: {}\ncreated on: {}\npath: {}", name, chrono::offset::Local::now(), path); // info file content
-        fs::create_dir(path).expect("Couldn't create db directory.");
-        fs::write(format!("{}/{}", path, "info.jadb"), info).expect("Couldn't create info file."); // write info file
+        let info = format!("jadb database\ntablename: {}\ncreated on: {}\npath: {}", name, chrono::offset::Local::now(), self.path); // info file content
+        fs::create_dir(self.path).expect("Couldn't create db directory.");
+        fs::write(format!("{}/{}", self.path, "info.jadb"), info).expect("Couldn't create info file."); // write info file
         0 // if ok return 0
     }
-    pub fn write(content: &str, table: Table, row: i32) -> i8 {
+    pub fn write(&self, content: &str, row: Row) -> i8 {
         if content.is_empty() { // No need to create new row if no content
             println!("Not writing because no content given.");
             return 0;
         }
-        println!("Writing {} to table path {} in Row {}", content, table.path, row);
-        let path = format!("{}/{}", table.path, row); // path for row file
+        println!("Writing {} to table path {} in Row {}", content, self.path, row.pos);
+        let path = format!("{}/{}", self.path, row.pos); // path for row file
         if Path::new(&path).exists() { // if row already exists
             let mut con_w_form: String = String::from(""); // save contents here
             let mut con_str: Vec<&str> = content.split("\n").collect(); // split fields
@@ -79,8 +83,8 @@ impl Table<'_> {
         }
         0 // if ok return 0
     }
-    pub fn read(table: Table, row: Row) -> Vec<String> {
-        let content = fs::read_to_string(format!("{}/{}", table.path, row.pos)).expect("Couldn't read row");
+    pub fn read(&self, row: Row) -> Vec<String> {
+        let content = fs::read_to_string(format!("{}/{}", self.path, row.pos)).expect("Couldn't read row");
         let con_str: Vec<String> = content.split("\n").map(String::from).collect();
         con_str
     }
@@ -94,7 +98,7 @@ pub enum LenType {
 
 impl Row {
     pub fn length(&self, table: Table, utype: LenType) -> i32 {
-        let con = Table::read(table, *self);
+        let con = table.read(*self);
         let mut len: i32 = 0;
         if utype == LenType::Characters {
             for i in 0..con.len() {
@@ -107,13 +111,13 @@ impl Row {
     }
     pub fn shash(&self, table: Table) -> u64 {
         let mut hasher = DefaultHasher::new();
-        let a: Vec<String> = Table::read(table, *self);
+        let a: Vec<String> = table.read(*self);
         a.hash(&mut hasher);
         hasher.finish()
     }
     pub fn shash_debug(&self, table: Table, test_con: &str) -> u64 { // debug version with content to compare against
         let mut hasher = DefaultHasher::new();
-        let a: Vec<String> = Table::read(table, *self);
+        let a: Vec<String> = table.read(*self);
 
         let mut test_hasher = DefaultHasher::new(); // make 'b' hash with same content
         let b: Vec<String> = vec![String::from(test_con), String::from("")];
@@ -133,18 +137,18 @@ impl Row {
 
 impl Field {
     pub fn length(&self, table: Table, row: Row) -> i32 {
-        let con = Table::read(table, row);
+        let con = table.read(row);
         con[self.pos as usize].len() as i32
     }
     pub fn shash(&self, table: Table, row: Row) -> u64 {
         let mut hasher = DefaultHasher::new();
-        let a: Vec<String> = Table::read(table, row);
+        let a: Vec<String> = table.read(row);
         a[self.pos as usize].hash(&mut hasher);
         hasher.finish()
     }
     pub fn shash_debug(&self, table: Table, row: Row, test_con: &str) -> u64 { // debug version with content to compare against
         let mut hasher = DefaultHasher::new();
-        let a: Vec<String> = Table::read(table, row);
+        let a: Vec<String> = table.read(row);
 
         let mut test_hasher = DefaultHasher::new(); // make 'b' hash with same content
         let b: Vec<String> = vec![String::from(test_con)];
