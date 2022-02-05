@@ -61,7 +61,7 @@ impl Table<'_> {
     pub fn write(&self, content: &str, row: Row) -> i8 {
         if content.is_empty() { // No need to create new row if no content
             println!("Not writing because no content given.");
-            return 0;
+            return 1;
         }
         println!("Writing {} to table path {} in Row {}", content, self.path, row.pos);
         let path = format!("{}/{}", self.path, row.pos); // path for row file
@@ -75,7 +75,9 @@ impl Table<'_> {
                     con_str[i] = con_old_row[i]; // overwrite '|o' with old content
                 }
                 con_w_form.push_str(con_str[i]);
-                con_w_form.push_str("\n"); // add delimiter
+                if i != con_str.len()-1 {
+                    con_w_form.push_str("\n"); // add delimiter
+                }
             }
             fs::write(&path, con_w_form).expect("Couldn't write Row");
         } else {
@@ -87,6 +89,16 @@ impl Table<'_> {
         let content = fs::read_to_string(format!("{}/{}", self.path, row.pos)).expect("Couldn't read row");
         let con_str: Vec<String> = content.split("\n").map(String::from).collect();
         con_str
+    }
+    pub fn delete(&self) -> i8 {
+        let info_path = format!("{}/{}", self.path, "info.jadb"); // create path of info file
+        if Path::new(&info_path).exists() { // use it to check if table exists
+            fs::remove_dir_all(self.path).expect("Couldn't delete database files."); // delete folder
+            return 0;
+        } else {
+            println!("Table doesn't exist at {}", self.path);
+            return 1;
+        }
     }
 }
 
@@ -133,6 +145,16 @@ impl Row {
         assert_eq!(res_a, res_b); // check if are the same
         hasher.finish()
     }
+    pub fn delete(&self, table: Table) -> i8 {
+        let row_path = format!("{}/{}", table.path, self.pos); // create path of row
+        if Path::new(&row_path).exists() { // use it to check if row exists
+            fs::remove_file(row_path).expect("Couldn't delete Row."); // delete file
+            return 0;
+        } else {
+            println!("Row doesn't exist at {}", row_path);
+            return 1;
+        }
+    }
 }
 
 impl Field {
@@ -163,5 +185,14 @@ impl Field {
 
         assert_eq!(res_a, res_b); // check if are the same
         hasher.finish()
+    }
+    pub fn delete(&self, table: Table, row: Row) -> i8 {
+        let mut wo_field = table.read(row); // read contents with field
+        println!("{:?}", wo_field);
+        wo_field.remove(self.pos as usize); // remove that field
+        println!("{:?}", wo_field);
+        let wo_field_str: &str = &wo_field.join("\n"); // make it into one string
+        println!("{}", wo_field_str);
+        table.write(wo_field_str, row) // rewrite row without field
     }
 }
