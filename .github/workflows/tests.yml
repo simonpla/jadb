@@ -17,6 +17,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Make folder
-      run: mkdir test_dir
+      run: mkdir -p tests/test_dir
     - name: Run tests
       run: cargo test -v -- --test-threads=1
