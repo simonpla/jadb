@@ -120,7 +120,7 @@ impl Row {
         let a: Vec<String> = table.read(*self);
 
         let mut test_hasher = DefaultHasher::new(); // make 'b' hash with same content
-        let b: Vec<String> = vec![String::from(test_con), String::from("")];
+        let b: Vec<String> = vec![String::from(test_con)];
 
         println!("actual Row: {:?}, test Row: {:?}", a, b); // print unhashed contents
 
