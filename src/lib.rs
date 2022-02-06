@@ -65,6 +65,8 @@ impl Table<'_> {
         }
         println!("Writing {} to table path {} in Row {}", content, self.path, row.pos);
         let path = format!("{}/{}", self.path, row.pos); // path for row file
+        let mut hasher = DefaultHasher::new();
+        let mut hash_con: Vec<String> = vec![]; // save hashes here
         if Path::new(&path).exists() { // if row already exists
             let mut con_w_form: String = String::from(""); // save contents here
             let mut con_str: Vec<&str> = content.split("\n").collect(); // split fields
@@ -78,10 +80,19 @@ impl Table<'_> {
                 if i != con_str.len()-1 {
                     con_w_form.push_str("\n"); // add delimiter
                 }
+                con_str[i].hash(&mut hasher);
+                hash_con.push(hasher.finish().to_string());
             }
             fs::write(&path, con_w_form).expect("Couldn't write Row");
+            fs::write(format!("{}_hash", &path), hash_con.join("\n")).expect("Couldn't write hash of row");
         } else {
+            let con_str: Vec<&str> = content.split("\n").collect(); // split fields
+            for i in 0..con_str.len() {
+                con_str[i].hash(&mut hasher);
+                hash_con.push(hasher.finish().to_string());
+            }
             fs::write(&path, content).expect("Couldn't write Row");
+            fs::write(format!("{}_hash", &path), hash_con.join("\n")).expect("Couldn't write hash of row");
         }
         0 // if ok return 0
     }
@@ -195,4 +206,8 @@ impl Field {
         println!("{}", wo_field_str);
         table.write(wo_field_str, row) // rewrite row without field
     }
+}
+
+pub fn init(table: Table) -> i8 {
+    0
 }
