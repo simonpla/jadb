@@ -75,6 +75,8 @@ mod tests {
         assert_eq!(test_row.shash(test_table), 17259954866336786813);
         assert_eq!(test_field.shash_debug(test_table, test_row, "hi"), 14565685931123352409);
         assert_eq!(test_field.shash(test_table, test_row), 14565685931123352409);
+
+        assert_eq!(fs::read_to_string(format!("{}/{}_hash", test_table.path, test_row.pos)).expect("Couldn't read hash file."), "14565685931123352409");
     }
     #[test]
     fn f_test_delete() {
