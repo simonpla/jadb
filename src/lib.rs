@@ -6,9 +6,6 @@ TABLE
 |----------|
 
 FORMATTING
-t = text
-n = number
-d = date
 \n = delimiter
 |o = old field content
 */
@@ -209,5 +206,16 @@ impl Field {
 }
 
 pub fn init(table: Table) -> i8 {
+    let mut hashes: Vec<Vec<String>> = vec![];
+    hashes[0] = vec![fs::read_to_string(format!("{}/{}_hash", table.path, 0)).expect("Couldn't read hash file").split("\n").map(String::from).collect()];
+    let mut i = 0;
+    loop {
+        if Path::new(format!("{}/{}_hash", table.path, i)).exists() {
+            hashes[0] = vec![fs::read_to_string(format!("{}/{}_hash", table.path, i)).expect("Couldn't read hash file").split("\n").map(String::from).collect()];
+            i += 1;
+        } else {
+            break;
+        }
+    }
     0
 }
