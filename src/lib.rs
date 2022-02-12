@@ -22,6 +22,7 @@ use std::hash::{Hash, Hasher};
 #[derive(Copy, Clone)]
 pub struct Table<'a> { // Table
     pub path: &'a str, // name of db, absolute or relative path
+    pub id: usize, // table id
 }
 
 #[derive(Copy, Clone, Hash)]
@@ -205,18 +206,45 @@ impl Field {
     }
 }
 
-pub fn init(table: Table) -> i8 {
-    let mut hashes: Vec<Vec<String>> = vec![];
-    hashes[0] = vec![fs::read_to_string(format!("{}/{}_hash", table.path, 0)).expect("Couldn't read hash file").split("\n").map(String::from).collect()];
+pub fn init(table: Table, hash_var: &mut Vec<Vec<String>>) -> i8 {
+    //hash_var.push(vec![fs::read_to_string(format!("{}/{}_hash", table.path, table.id)).expect("Couldn't read hash file").split("\n").map(String::from).collect()]);
     let mut i = 0;
     loop {
         let path = format!("{}/{}_hash", table.path, i);
         if Path::new(&path).exists() {
-            hashes[0] = vec![fs::read_to_string(&path).expect("Couldn't read hash file").split("\n").map(String::from).collect()];
+            hash_var.push(vec![fs::read_to_string(&path).expect("Couldn't read hash file").split("\n").map(String::from).collect()]);
             i += 1;
         } else {
             break;
         }
     }
     0
+}
+
+#[derive(PartialEq)]
+pub enum SearchType {
+    All,
+    Table,
+}
+
+pub fn search(term: String, table: Table, utype: SearchType, hash_var: &Vec<Vec<String>>) -> Vec<usize> {
+    let mut hasher = DefaultHasher::new();
+    term.hash(&mut hasher);
+    let term_hash = hasher.finish();
+    if utype == SearchType::Table {
+        for i in 0..hash_var[table.id].len() {
+            if hash_var[table.id][i as usize] == term_hash.to_string() {
+                return vec![table.id, i];
+            }
+        }
+    } else {
+        for i in 0..hash_var.len() {
+            for j in 0..hash_var[i].len() {
+                if hash_var[i][j] == term_hash.to_string() {
+                    return vec![i, j];
+                }
+            }
+        }
+    }
+    vec![0 as usize, 0 as usize]
 }

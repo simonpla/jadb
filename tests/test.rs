@@ -14,6 +14,7 @@ mod tests {
     fn a_test_create() {
         let test_table = jadb::Table {
             path: "tests/test_dir/test_db",
+            id: 0,
         };
         let info_path = format!("{}/{}", test_table.path, "info.jadb");
         a_delete(test_table, info_path.clone());
@@ -25,6 +26,7 @@ mod tests {
     fn b_test_write() {
         let test_table = jadb::Table {
             path: "tests/test_dir/test_db",
+            id: 0,
         };
         let test_row = jadb::Row {
             pos: 0,
@@ -37,6 +39,7 @@ mod tests {
     fn c_test_read() {
         let test_table = jadb::Table {
             path: "tests/test_dir/test_db",
+            id: 0,
         };
         let test_row = jadb::Row {
             pos: 0,
@@ -49,6 +52,7 @@ mod tests {
     fn d_test_len() {
         let test_table = jadb::Table {
             path: "tests/test_dir/test_db",
+            id: 0,
         };
         let test_row = jadb::Row {
             pos: 0,
@@ -64,6 +68,7 @@ mod tests {
     fn e_test_hash() {
         let test_table = jadb::Table {
             path: "tests/test_dir/test_db",
+            id: 0,
         };
         let test_row = jadb::Row {
             pos: 0,
@@ -79,9 +84,20 @@ mod tests {
         assert_eq!(fs::read_to_string(format!("{}/{}_hash", test_table.path, test_row.pos)).expect("Couldn't read hash file."), "14565685931123352409");
     }
     #[test]
-    fn f_test_delete() {
+    fn f_search_test() {
         let test_table = jadb::Table {
             path: "tests/test_dir/test_db",
+            id: 0,
+        };
+        let mut hasher: Vec<Vec<String>> = vec![];
+        assert_eq!(jadb::init(test_table, &mut hasher), 0);
+        assert_eq!(jadb::search(String::from("hi"), test_table, jadb::SearchType::Table, &hasher), vec![0, 0]);
+    }
+    #[test]
+    fn g_test_delete() {
+        let test_table = jadb::Table {
+            path: "tests/test_dir/test_db",
+            id: 0,
         };
         let test_row = jadb::Row {
             pos: 0,
