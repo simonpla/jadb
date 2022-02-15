@@ -207,15 +207,14 @@ impl Field {
 }
 
 pub fn init(table: Table, hash_var: &mut Vec<Vec<String>>) -> i8 {
-    //hash_var.push(vec![fs::read_to_string(format!("{}/{}_hash", table.path, table.id)).expect("Couldn't read hash file").split("\n").map(String::from).collect()]);
-    let mut i = 0;
-    loop {
-        let path = format!("{}/{}_hash", table.path, i);
-        if Path::new(&path).exists() {
-            hash_var.push(vec![fs::read_to_string(&path).expect("Couldn't read hash file").split("\n").map(String::from).collect()]);
-            i += 1;
-        } else {
-            break;
+    let paths = fs::read_dir(table.path).expect("Couldn't read table directory"); // read dir contents
+    let mut strpaths: Vec<String> = vec![];
+    for path in paths {
+        strpaths.push(path.unwrap().path().display().to_string()); // put them into a string vector
+    }
+    for i in 0..strpaths.len() {
+        if strpaths[i].contains("_hash") { // if is a hash file
+            hash_var.push(vec![fs::read_to_string(&strpaths[i]).expect("Couldn't read hash file").split("\n").map(String::from).collect()]); // put it into the hash vector
         }
     }
     0
@@ -229,19 +228,19 @@ pub enum SearchType {
 
 pub fn search(term: String, table: Table, utype: SearchType, hash_var: &Vec<Vec<String>>) -> Vec<usize> {
     let mut hasher = DefaultHasher::new();
-    term.hash(&mut hasher);
+    term.hash(&mut hasher); // hash search term
     let term_hash = hasher.finish();
     if utype == SearchType::Table {
-        for i in 0..hash_var[table.id].len() {
-            if hash_var[table.id][i as usize] == term_hash.to_string() {
-                return vec![table.id, i];
+        for i in 0..hash_var[table.id].len() { // search table hash
+            if hash_var[table.id][i as usize] == term_hash.to_string() { // if term hash matches field hash
+                return vec![table.id, i]; // return pos
             }
         }
     } else {
-        for i in 0..hash_var.len() {
-            for j in 0..hash_var[i].len() {
-                if hash_var[i][j] == term_hash.to_string() {
-                    return vec![i, j];
+        for i in 0..hash_var.len() { // iterate through whole hash array
+            for j in 0..hash_var[i].len() { // iterate through every table
+                if hash_var[i][j] == term_hash.to_string() { // search for term hash
+                    return vec![i, j]; // return pos
                 }
             }
         }
