@@ -56,7 +56,7 @@ impl Table<'_> {
         fs::write(format!("{}/{}", self.path, "info.jadb"), info).expect("Couldn't create info file."); // write info file
         0 // if ok return 0
     }
-    pub fn write(&self, content: &str, row: Row) -> i8 {
+    pub fn write(&self, content: &str, row: Row, hash_var: &mut Vec<Vec<String>>) -> i8 {
         if content.is_empty() { // No need to create new row if no content
             println!("Not writing because no content given.");
             return 1;
@@ -83,6 +83,7 @@ impl Table<'_> {
             }
             fs::write(&path, con_w_form).expect("Couldn't write Row");
             fs::write(format!("{}_hash", &path), hash_con.join("\n")).expect("Couldn't write hash of row");
+            hash_var[row.pos as usize].push(hash_con.join("\n")); // add to hash vec
         } else {
             let con_str: Vec<&str> = content.split("\n").collect(); // split fields
             for i in 0..con_str.len() {
@@ -154,10 +155,13 @@ impl Row {
         assert_eq!(res_a, res_b); // check if are the same
         hasher.finish()
     }
-    pub fn delete(&self, table: Table) -> i8 {
+    pub fn delete(&self, table: Table, hash_var: &mut Vec<Vec<String>>) -> i8 {
         let row_path = format!("{}/{}", table.path, self.pos); // create path of row
+        let row_path_hf = format!("{}/{}_hash", table.path, self.pos); // create path of row hash file
         if Path::new(&row_path).exists() { // use it to check if row exists
             fs::remove_file(row_path).expect("Couldn't delete Row."); // delete file
+            fs::remove_file(row_path_hf).expect("Couldn't delete Row hash file."); // delete hash file
+            hash_var.remove(self.pos as usize);
             return 0;
         } else {
             println!("Row doesn't exist at {}", row_path);
@@ -195,14 +199,15 @@ impl Field {
         assert_eq!(res_a, res_b); // check if are the same
         hasher.finish()
     }
-    pub fn delete(&self, table: Table, row: Row) -> i8 {
+    pub fn delete(&self, table: Table, row: Row, hash_var: &mut Vec<Vec<String>>) -> i8 {
         let mut wo_field = table.read(row); // read contents with field
         println!("{:?}", wo_field);
         wo_field.remove(self.pos as usize); // remove that field
         println!("{:?}", wo_field);
+        hash_var[row.pos as usize].remove(self.pos as usize); // remove hash contents
         let wo_field_str: &str = &wo_field.join("\n"); // make it into one string
         println!("{}", wo_field_str);
-        table.write(wo_field_str, row) // rewrite row without field
+        table.write(wo_field_str, row, hash_var) // rewrite row without field
     }
 }
 

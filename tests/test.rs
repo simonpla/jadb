@@ -31,7 +31,9 @@ mod tests {
         let test_row = jadb::Row {
             pos: 0,
         };
-        let w_res = test_table.write("hi", test_row);
+        let mut hasher: Vec<Vec<String>> = vec![];
+        jadb::init(test_table, &mut hasher);
+        let w_res = test_table.write("hi", test_row, &mut hasher);
         assert_eq!(w_res, 0);
         assert_eq!(fs::read_to_string(format!("{}/{}", test_table.path, 0)).expect("Couldn't read test"), "hi");
     }
@@ -105,13 +107,15 @@ mod tests {
         let test_field = jadb::Field {
             pos: 1,
         };
+        let mut hasher: Vec<Vec<String>> = vec![];
+        jadb::init(test_table, &mut hasher);
         let row_path = format!("{}/{}", test_table.path, test_row.pos);
-        let w_res = test_table.write("|o\na", test_row);
+        let w_res = test_table.write("|o\na", test_row, &mut hasher);
         assert_eq!(w_res, 0);
-        let del_f = test_field.delete(test_table, test_row);
+        let del_f = test_field.delete(test_table, test_row, &mut hasher);
         assert_eq!(del_f, 0);
         assert_eq!(test_table.read(test_row), vec![String::from("hi")]);
-        let del_r = test_row.delete(test_table);
+        let del_r = test_row.delete(test_table, &mut hasher);
         assert_eq!(del_r, 0);
         assert_eq!(Path::new(&row_path).exists(), false);
         let del_t = test_table.delete();
