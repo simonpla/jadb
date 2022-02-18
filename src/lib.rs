@@ -64,7 +64,7 @@ impl Table<'_> {
         println!("Writing {} to table path {} in Row {}", content, self.path, row.pos);
         let path = format!("{}/{}", self.path, row.pos); // path for row file
         let mut hasher = DefaultHasher::new();
-        let mut hash_con: Vec<String> = vec![]; // save hashes here
+        let mut hash_con: Vec<String> = Vec::with_capacity(content.matches("\n").count()); // save hashes here
         if Path::new(&path).exists() { // if row already exists
             let mut con_w_form: String = String::from(""); // save contents here
             let mut con_str: Vec<&str> = content.split("\n").collect(); // split fields
@@ -82,6 +82,7 @@ impl Table<'_> {
                 hash_con.push(hasher.finish().to_string());
             }
             fs::write(&path, con_w_form).expect("Couldn't write Row");
+
             fs::write(format!("{}_hash", &path), hash_con.join("\n")).expect("Couldn't write hash of row");
             hash_var[row.pos as usize].push(hash_con.join("\n")); // add to hash vec
         } else {
@@ -142,7 +143,8 @@ impl Row {
         let a: Vec<String> = table.read(*self);
 
         let mut test_hasher = DefaultHasher::new(); // make 'b' hash with same content
-        let b: Vec<String> = vec![String::from(test_con)];
+        let mut b: Vec<String> = Vec::with_capacity(1);
+        b.push(String::from(test_con));
 
         println!("actual Row: {:?}, test Row: {:?}", a, b); // print unhashed contents
 
@@ -186,7 +188,8 @@ impl Field {
         let a: Vec<String> = table.read(row);
 
         let mut test_hasher = DefaultHasher::new(); // make 'b' hash with same content
-        let b: Vec<String> = vec![String::from(test_con)];
+        let mut b: Vec<String> = Vec::with_capacity(1);
+        b.push(String::from(test_con));
 
         println!("actual Field: {:?}, test Field: {:?}", a[self.pos as usize], b[0]); // print unhashed contents
 
@@ -213,10 +216,11 @@ impl Field {
 
 pub fn init(table: Table, hash_var: &mut Vec<Vec<String>>) -> i8 {
     let paths = fs::read_dir(table.path).expect("Couldn't read table directory"); // read dir contents
-    let mut strpaths: Vec<String> = vec![];
+    let mut strpaths: Vec<String> = Vec::with_capacity(100); // assuming there are 100 rows. will be only reallocated if number is higher
     for path in paths {
         strpaths.push(path.unwrap().path().display().to_string()); // put them into a string vector
     }
+    strpaths.shrink_to_fit(); // free up unused memory
     for i in 0..strpaths.len() {
         if strpaths[i].contains("_hash") { // if is a hash file
             hash_var.push(vec![fs::read_to_string(&strpaths[i]).expect("Couldn't read hash file").split("\n").map(String::from).collect()]); // put it into the hash vector
