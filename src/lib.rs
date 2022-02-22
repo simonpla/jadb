@@ -12,7 +12,7 @@ FORMATTING
 
 // filesystem access
 use std::fs;
-use chrono;
+extern crate chrono;
 use std::path::Path;
 
 // hashing
