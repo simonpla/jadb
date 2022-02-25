@@ -31,7 +31,7 @@ mod tests {
         let test_row = jadb::Row {
             pos: 0,
         };
-        let mut hasher: Vec<Vec<String>> = vec![];
+        let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
         jadb::init(test_table, &mut hasher);
         let w_res = test_table.write("hi", test_row, &mut hasher);
         assert_eq!(w_res, 0);
@@ -91,7 +91,7 @@ mod tests {
             path: "tests/test_dir/test_db",
             id: 0,
         };
-        let mut hasher: Vec<Vec<String>> = vec![];
+        let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
         assert_eq!(jadb::init(test_table, &mut hasher), 0);
         assert_eq!(jadb::search(String::from("hi"), test_table, jadb::SearchType::Table, &hasher), vec![0, 0]);
     }
@@ -107,7 +107,7 @@ mod tests {
         let test_field = jadb::Field {
             pos: 1,
         };
-        let mut hasher: Vec<Vec<String>> = vec![];
+        let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
         jadb::init(test_table, &mut hasher);
         let row_path = format!("{}/{}", test_table.path, test_row.pos);
         let w_res = test_table.write("|o\na", test_row, &mut hasher);
