@@ -82,8 +82,6 @@ mod tests {
         assert_eq!(test_row.shash(test_table), 17259954866336786813);
         assert_eq!(test_field.shash_debug(test_table, test_row, "hi"), 14565685931123352409);
         assert_eq!(test_field.shash(test_table, test_row), 14565685931123352409);
-
-        assert_eq!(fs::read_to_string(format!("{}/{}_hash", test_table.path, test_row.pos)).expect("Couldn't read hash file."), "14565685931123352409");
     }
     #[test]
     fn f_search_test() {
@@ -91,9 +89,9 @@ mod tests {
             path: "tests/test_dir/test_db",
             id: 0,
         };
-        let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+        let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new(); 100]; 100];
         assert_eq!(jadb::init(test_table, &mut hasher), 0);
-        assert_eq!(jadb::search(String::from("hi"), test_table, jadb::SearchType::Table, &hasher), vec![0, 0]);
+        assert_eq!(jadb::search(String::from("hi"), test_table, jadb::SearchType::Table, &hasher), vec![0, 0, 0]);
     }
     #[test]
     fn g_test_delete() {
@@ -107,7 +105,7 @@ mod tests {
         let test_field = jadb::Field {
             pos: 1,
         };
-        let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+        let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new(); 100]; 100];
         jadb::init(test_table, &mut hasher);
         let row_path = format!("{}/{}", test_table.path, test_row.pos);
         let w_res = test_table.write("|o\na", test_row, &mut hasher);
