@@ -21,6 +21,13 @@ mod tests {
         let c_res = test_table.create();
         assert_eq!(c_res, 0);
         assert_eq!(Path::new(&info_path).exists(), true);
+        assert_eq!(test_table.create(), 1);
+
+        let test_table_2 = jadb::Table {
+            path: "tests/test_dir/test_db",
+            id: 0,
+        };
+        assert_eq!(test_table_2.create(), 1);
     }
     #[test]
     fn b_test_write() {
@@ -31,11 +38,12 @@ mod tests {
         let test_row = jadb::Row {
             pos: 0,
         };
-        let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+        let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new(); 100]; 100];
         jadb::init(test_table, &mut hasher);
         let w_res = test_table.write("hi", test_row, &mut hasher);
         assert_eq!(w_res, 0);
         assert_eq!(fs::read_to_string(format!("{}/{}", test_table.path, 0)).expect("Couldn't read test"), "hi");
+        assert_eq!(test_table.write("", test_row, &mut hasher), 1);
     }
     #[test]
     fn c_test_read() {
@@ -92,6 +100,7 @@ mod tests {
         let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new(); 100]; 100];
         assert_eq!(jadb::init(test_table, &mut hasher), 0);
         assert_eq!(jadb::search(String::from("hi"), test_table, jadb::SearchType::Table, &hasher), vec![0, 0, 0]);
+        assert_eq!(jadb::search(String::from("hi"), test_table, jadb::SearchType::All, &hasher), vec![0, 0, 0]);
     }
     #[test]
     fn g_test_delete() {
@@ -113,11 +122,16 @@ mod tests {
         let del_f = test_field.delete(test_table, test_row, &mut hasher);
         assert_eq!(del_f, 0);
         assert_eq!(test_table.read(test_row), vec![String::from("hi")]);
+
         let del_r = test_row.delete(test_table, &mut hasher);
         assert_eq!(del_r, 0);
         assert_eq!(Path::new(&row_path).exists(), false);
+        assert_eq!(test_row.delete(test_table, &mut hasher), 1);
+
         let del_t = test_table.delete();
         assert_eq!(del_t, 0);
         assert_eq!(Path::new(&test_table.path).exists(), false);
+
+        assert_eq!(test_table.delete(), 1);
     }
 }

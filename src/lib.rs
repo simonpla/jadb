@@ -185,7 +185,7 @@ impl Field {
     }
     pub fn delete(&self, table: Table, row: Row, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let mut wo_field = table.read(row); // read contents with field
-        wo_field.remove(self.pos as usize); // remove that field
+        wo_field.remove(self.pos as usize);
         let wo_field_str: &str = &wo_field.join("\n"); // make it into one string
         table.write(wo_field_str, row, hash_var) // rewrite row without field
     }
