@@ -24,12 +24,12 @@ pub struct Table<'a> { // Table
 
 #[derive(Copy, Clone, Hash)]
 pub struct Row { // Row
-    pub pos: i32, // position (line) in Table
+    pub pos: usize, // position (line) in Table
 }
 
 #[derive(Copy, Clone, Hash)]
 pub struct Field {
-    pub pos: i32, // position in Row
+    pub pos: usize, // position in Row
 }
 
 impl Table<'_> {
@@ -73,10 +73,17 @@ impl Table<'_> {
                 if i != con_str.len()-1 {
                     con_w_form.push_str("\n"); // add delimiter
                 }
+
+                hash_var[self.id][row.pos].insert(con_str[i].parse().unwrap(), i); // add new content to hash variable
             }
             std::fs::write(&path, con_w_form).expect("Couldn't write Row");
         } else {
             std::fs::write(&path, content).expect("Couldn't write Row");
+
+            let con_str: Vec<&str> = content.split("\n").collect(); // split fields
+            for i in 0..con_str.len() {
+                hash_var[self.id][row.pos].insert(con_str[i].parse().unwrap(), i); // add new content to hash variable
+            }
         }
         0 // if ok return 0
     }
@@ -156,12 +163,12 @@ impl Row {
 impl Field {
     pub fn length(&self, table: Table, row: Row) -> i32 {
         let con = table.read(row);
-        con[self.pos as usize].len() as i32
+        con[self.pos].len() as i32
     }
     pub fn shash(&self, table: Table, row: Row) -> u64 {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         let a: Vec<String> = table.read(row);
-        a[self.pos as usize].hash(&mut hasher);
+        a[self.pos].hash(&mut hasher);
         hasher.finish()
     }
     pub fn shash_debug(&self, table: Table, row: Row, test_con: &str) -> u64 { // debug version with content to compare against
@@ -172,12 +179,12 @@ impl Field {
         let mut b: Vec<String> = Vec::with_capacity(1);
         b.push(String::from(test_con));
 
-        println!("actual Field: {:?}, test Field: {:?}", a[self.pos as usize], b[0]); // print unhashed contents
+        println!("actual Field: {:?}, test Field: {:?}", a[self.pos], b[0]); // print unhashed contents
 
         b[0].hash(&mut test_hasher); // finish 'b' hash
         let res_b = test_hasher.finish();
 
-         a[self.pos as usize].hash(&mut hasher); // finish 'a' hash
+         a[self.pos].hash(&mut hasher); // finish 'a' hash
         let res_a = hasher.finish();
 
         assert_eq!(res_a, res_b); // check if are the same
@@ -185,7 +192,7 @@ impl Field {
     }
     pub fn delete(&self, table: Table, row: Row, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let mut wo_field = table.read(row); // read contents with field
-        wo_field.remove(self.pos as usize);
+        wo_field.remove(self.pos);
         let wo_field_str: &str = &wo_field.join("\n"); // make it into one string
         table.write(wo_field_str, row, hash_var) // rewrite row without field
     }
