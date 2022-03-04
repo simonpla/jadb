@@ -92,10 +92,11 @@ impl Table<'_> {
         let con_str: Vec<String> = content.split("\n").map(String::from).collect();
         con_str
     }
-    pub fn delete(&self) -> i8 {
+    pub fn delete(&self, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let info_path = format!("{}/{}", self.path, "info.jadb"); // create path of info file
         return if std::path::Path::new(&info_path).exists() { // use it to check if table exists
             std::fs::remove_dir_all(self.path).expect("Couldn't delete database files."); // delete folder
+            hash_var[self.id].clear(); // and the HashMap
             0
         } else {
             println!("Table doesn't exist at {}", self.path);
@@ -148,10 +149,11 @@ impl Row {
         assert_eq!(res_a, res_b); // check if are the same
         hasher.finish()
     }
-    pub fn delete(&self, table: Table, hash_var: &Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
+    pub fn delete(&self, table: Table, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let row_path = format!("{}/{}", table.path, self.pos); // create path of row
         return if std::path::Path::new(&row_path).exists() { // use it to check if row exists
             std::fs::remove_file(row_path).expect("Couldn't delete Row."); // delete file
+            hash_var[table.id][self.pos].clear(); // and the HashMap
             0
         } else {
             println!("Row doesn't exist at {}", row_path);
@@ -192,7 +194,9 @@ impl Field {
     }
     pub fn delete(&self, table: Table, row: Row, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let mut wo_field = table.read(row); // read contents with field
-        wo_field.remove(self.pos);
+        let to_delete = wo_field[self.pos].clone(); // save content to be deleted
+        wo_field.remove(self.pos); // remove it from the string
+        hash_var[table.id][row.pos].remove(&*to_delete); // and the HashMap
         let wo_field_str: &str = &wo_field.join("\n"); // make it into one string
         table.write(wo_field_str, row, hash_var) // rewrite row without field
     }

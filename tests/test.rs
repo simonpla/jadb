@@ -128,10 +128,10 @@ mod tests {
         assert_eq!(Path::new(&row_path).exists(), false);
         assert_eq!(test_row.delete(test_table, &mut hasher), 1);
 
-        let del_t = test_table.delete();
+        let del_t = test_table.delete(&mut hasher);
         assert_eq!(del_t, 0);
         assert_eq!(Path::new(&test_table.path).exists(), false);
 
-        assert_eq!(test_table.delete(), 1);
+        assert_eq!(test_table.delete(&mut hasher), 1);
     }
 }
