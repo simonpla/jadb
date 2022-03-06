@@ -85,6 +85,9 @@ impl Table<'_> {
                 hash_var[self.id][row.pos].insert(con_str[i].parse().unwrap(), i); // add new content to hash variable
             }
         }
+        if hash_var[self.id].len() < row.pos { // if row hash var is too small
+            hash_var[self.id].resize(row.pos, std::collections::HashMap::new()); // resize
+        }
         0 // if ok return 0
     }
     pub fn read(&self, row: Row) -> Vec<String> {
@@ -97,6 +100,9 @@ impl Table<'_> {
         return if std::path::Path::new(&info_path).exists() { // use it to check if table exists
             std::fs::remove_dir_all(self.path).expect("Couldn't delete database files."); // delete folder
             hash_var[self.id].clear(); // and the HashMap
+            if self.id == hash_var.len()-1 { // if id of removed table is last element
+                hash_var.pop(); // remove last element
+            }
             0
         } else {
             println!("Table doesn't exist at {}", self.path);
@@ -154,6 +160,9 @@ impl Row {
         return if std::path::Path::new(&row_path).exists() { // use it to check if row exists
             std::fs::remove_file(row_path).expect("Couldn't delete Row."); // delete file
             hash_var[table.id][self.pos].clear(); // and the HashMap
+            if self.pos == hash_var[table.id].len()-1 { // if id of removed row is last element
+                hash_var[table.id].pop(); // remove last element
+            }
             0
         } else {
             println!("Row doesn't exist at {}", row_path);
@@ -203,12 +212,18 @@ impl Field {
 }
 
 pub fn init(table: Table, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
+    if hash_var.len() < table.id { // if table hash var is too small
+        hash_var.resize(table.id, vec![std::collections::HashMap::new()]); // resize
+    }
     let paths = std::fs::read_dir(table.path).expect("Couldn't read table directory"); // read dir contents
     let mut strpaths: Vec<String> = Vec::with_capacity(100); // assuming there are 100 rows. will be only reallocated if number is higher
     for path in paths {
         strpaths.push(path.unwrap().path().display().to_string()); // put them into a string vector
     }
     strpaths.shrink_to_fit(); // free up unused memory
+    if hash_var[table.id].len() < strpaths.len() { // if row hash var is too small
+        hash_var[table.id].resize(strpaths.len(), std::collections::HashMap::new()); // resize
+    }
     for i in 0..strpaths.len() {
         if strpaths[i] != "info.jadb" { // if is a row file
             let con: Vec<String> = std::fs::read_to_string(&strpaths[i]).expect("Couldn't read Row").split("\n").map(String::from).collect(); // get Row contents
