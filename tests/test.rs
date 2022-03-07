@@ -99,8 +99,8 @@ mod tests {
         };
         let mut hasher: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
         assert_eq!(jadb::init(test_table, &mut hasher), 0);
-        assert_eq!(jadb::search(String::from("hi"), test_table, jadb::SearchType::Table, &hasher), vec![0, 0, 0]);
-        assert_eq!(jadb::search(String::from("hi"), test_table, jadb::SearchType::All, &hasher), vec![0, 0, 0]);
+        assert_eq!(test_table.search(String::from("hi"), &hasher), vec![0, 0, 0]);
+        assert_eq!(jadb::search(String::from("hi"), &hasher), vec![0, 0, 0]);
     }
     #[test]
     fn g_test_delete() {

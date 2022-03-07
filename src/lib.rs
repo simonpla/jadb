@@ -95,6 +95,15 @@ impl Table<'_> {
         let con_str: Vec<String> = content.split("\n").map(String::from).collect();
         con_str
     }
+    pub fn search(&self, term: String, hash_var: &Vec<Vec<std::collections::HashMap<String, usize>>>) -> Vec<usize> {
+        for i in 0..hash_var[self.id].len() { // search every row in table
+            return match hash_var[self.id][i].get(&term) { // for term
+                Some(result) => vec![self.id, i, *result], // return [Table, Row, pos]
+                None => vec![0, 0, 0]
+            }
+        }
+        vec![]
+    }
     pub fn delete(&self, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let info_path = format!("{}/{}", self.path, "info.jadb"); // create path of info file
         return if std::path::Path::new(&info_path).exists() { // use it to check if table exists
@@ -235,29 +244,14 @@ pub fn init(table: Table, hash_var: &mut Vec<Vec<std::collections::HashMap<Strin
     0
 }
 
-#[derive(PartialEq)]
-pub enum SearchType {
-    All,
-    Table,
-}
-
-pub fn search(term: String, table: Table, utype: SearchType, hash_var: &Vec<Vec<std::collections::HashMap<String, usize>>>) -> Vec<usize> {
-    if utype == SearchType::Table {
-        for i in 0..hash_var[table.id].len() { // search every row in table
-            return match hash_var[table.id][i].get(&term) { // for term
-                Some(result) => vec![table.id, i, *result], // return [Table, Row, pos]
+pub fn search(term: String, hash_var: &Vec<Vec<std::collections::HashMap<String, usize>>>) -> Vec<usize> {
+    for i in 0..hash_var.len() { // iterate through whole hash array
+        for j in 0..hash_var[i].len() { // iterate through every table
+            return match hash_var[i][j].get(&term) {
+                Some(result) => vec![i, j, *result],
                 None => vec![0, 0, 0]
             }
         }
-    } else {
-        for i in 0..hash_var.len() { // iterate through whole hash array
-            for j in 0..hash_var[i].len() { // iterate through every table
-                return match hash_var[i][j].get(&term) {
-                    Some(result) => vec![i, j, *result],
-                    None => vec![0, 0, 0]
-                }
-            }
-        }
     }
-    vec![0, 0, 0]
+    vec![]
 }
