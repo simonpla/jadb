@@ -1,14 +1,12 @@
-/*
-TABLE
-|----------|
-|a|79|94725| <- ROW
-|hi|6|FIELD|
-|----------|
-
-FORMATTING
-\n = delimiter
-|o = old field content
-*/
+///# Docs
+///
+/// This is **j**ust **a**nother **d**ata**b**ase software.
+/// It aims to be simple and fast, while providing basic features like search and encryption. It also is designed to scale well on multiple systems.
+///
+///## Formatting
+///\n = delimiter
+///|o = old field content
+///
 
 // time
 extern crate chrono;
@@ -16,16 +14,56 @@ extern crate chrono;
 // hashing
 use std::hash::{Hash, Hasher};
 
+/// ## Table
+///
+/// The table is a construct, where you can save rows. Every table has a unique id.
+///
+/// ### Examples
+/// ```
+/// use jadb;
+///
+/// let table = jadb::Table {
+///     path: "path/to/table",
+///     id: 0,
+/// };
+/// ```
+
 #[derive(Copy, Clone)]
 pub struct Table<'a> { // Table
     pub path: &'a str, // name of db, absolute or relative path
     pub id: usize, // table id
 }
 
+/// ## Row
+///
+/// The row is a construct which is saved in tables. It consists of fields. Every Row has a position in the table.
+///
+/// ### Examples
+/// ```
+/// use jadb;
+///
+/// let table = jadb::Row {
+///     pos: 0
+/// };
+/// ```
+
 #[derive(Copy, Clone, Hash)]
 pub struct Row { // Row
     pub pos: usize, // position (line) in Table
 }
+
+/// ## Field
+///
+/// A field construct is saved in rows. It holds the data and has a position in its row.
+///
+/// ### Examples
+/// ```
+/// use jadb;
+///
+/// let table = jadb::Field {
+///     pos: 0
+/// };
+/// ```
 
 #[derive(Copy, Clone, Hash)]
 pub struct Field {

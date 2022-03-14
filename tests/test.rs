@@ -25,7 +25,7 @@ mod tests {
 
         let test_table_2 = jadb::Table {
             path: "tests/test_dir/test_db",
-            id: 0,
+            id: 1,
         };
         assert_eq!(test_table_2.create(), 1);
     }
