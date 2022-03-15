@@ -239,7 +239,7 @@ impl Table<'_> {
     ///
     /// Deletes a table.
     ///
-    /// This deletes the directory where the table is located in and clears the table's values in the hash storage
+    /// This deletes the directory where the table is located in and clears the table's values in the hash storage.
     ///
     /// ## Panic
     ///
