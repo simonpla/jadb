@@ -14,11 +14,11 @@ extern crate chrono;
 // hashing
 use std::hash::{Hash, Hasher};
 
-/// ## Table
+/// # Table
 ///
 /// The table is a construct, where you can save rows. Every table has a unique id.
 ///
-/// ### Examples
+/// ## Examples
 /// ```
 /// use jadb;
 ///
@@ -34,11 +34,11 @@ pub struct Table<'a> { // Table
     pub id: usize, // table id
 }
 
-/// ## Row
+/// # Row
 ///
 /// The row is a construct which is saved in tables. It consists of fields. Every Row has a position in the table.
 ///
-/// ### Examples
+/// ## Examples
 /// ```
 /// use jadb;
 ///
@@ -52,11 +52,11 @@ pub struct Row { // Row
     pub pos: usize, // position (line) in Table
 }
 
-/// ## Field
+/// # Field
 ///
 /// A field construct is saved in rows. It holds the data and has a position in its row.
 ///
-/// ### Examples
+/// ## Examples
 /// ```
 /// use jadb;
 ///
@@ -71,6 +71,27 @@ pub struct Field {
 }
 
 impl Table<'_> {
+    /// # create()
+    ///
+    /// This creates a new table.
+    ///
+    /// A new directory is created, where rows can be saved in the future. This function takes a Table struct. The path can either be relative or full.
+    ///
+    /// ## Panic
+    ///
+    /// A `0` is returned if everything ran ok, else it returns `1` with a short explanation of what went wrong.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// table.create();
+    /// ```
     pub fn create(&self) -> i8 {
         if self.path.is_empty() { // can't create table without name
             println!("no table path given, cannot create table");
@@ -91,6 +112,39 @@ impl Table<'_> {
         std::fs::write(format!("{}/{}", self.path, "info.jadb"), info).expect("Couldn't create info file."); // write info file
         0 // if ok return 0
     }
+    /// # write()
+    ///
+    /// This writes a new row to the table.
+    ///
+    /// A new file with the contents of the row is created. The fields are seperated using the delimiter `\n`.
+    /// If a Row is rewritten and `|o` is used instead of new data for a field, the old content of the field will be used for the new one.
+    /// A variable for storing the hash contents of all fields in all tables must be provided.
+    ///
+    /// ## Panic
+    ///
+    /// A `0` is returned if everything ran ok, else it returns `1` with a short explanation of what went wrong.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+    ///
+    /// table.write("|o\neveryone", row, &mut hash_storage); // take the first field at index 0 and replace it with old content, overwrite the second field with 'everyone'
+    /// ```
     pub fn write(&self, content: &str, row: Row, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         if content.is_empty() { // No need to create new row if no content
             println!("Not writing because no content given.");
@@ -128,20 +182,82 @@ impl Table<'_> {
         }
         0 // if ok return 0
     }
+    /// # read()
+    ///
+    /// Using this function you can read tables.
+    ///
+    /// This function returns a Vector with Strings. Each String consists of a field from the row that was read.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// // --snip-- you can look up how to create a table using table.create() and table.write() above
+    ///
+    /// let row_contents: Vec<String> = table.read(row);
+    /// ```
     pub fn read(&self, row: Row) -> Vec<String> {
         let content = std::fs::read_to_string(format!("{}/{}", self.path, row.pos)).expect("Couldn't read row");
         let con_str: Vec<String> = content.split("\n").map(String::from).collect();
         con_str
     }
+    /// # search()
+    ///
+    /// Using this you can search a table for a string.
+    ///
+    /// The hash storage of this table is searched for the hash of the String that aims to be found.
+    ///
+    /// ## Panic
+    ///
+    /// If the term isn't found, a empty vector will be returned. Else a vector consisting of the table id, the row position and the field position will be returned.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// let location: Vec<usize> = table.search(String::from("hi"), &mut hash_storage);
+    /// ```
     pub fn search(&self, term: String, hash_var: &Vec<Vec<std::collections::HashMap<String, usize>>>) -> Vec<usize> {
         for i in 0..hash_var[self.id].len() { // search every row in table
             return match hash_var[self.id][i].get(&term) { // for term
                 Some(result) => vec![self.id, i, *result], // return [Table, Row, pos]
-                None => vec![0, 0, 0]
+                None => vec![]
             }
         }
         vec![]
     }
+    /// # search()
+    ///
+    /// Deletes a table.
+    ///
+    /// This deletes the directory where the table is located in and clears the table's values in the hash storage
+    ///
+    /// ## Panic
+    ///
+    /// If it can't find the table, it will return 1, if it can delete it, it will return 0.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// table.delete(&mut hash_storeage);
+    /// ```
     pub fn delete(&self, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let info_path = format!("{}/{}", self.path, "info.jadb"); // create path of info file
         return if std::path::Path::new(&info_path).exists() { // use it to check if table exists
@@ -287,7 +403,7 @@ pub fn search(term: String, hash_var: &Vec<Vec<std::collections::HashMap<String,
         for j in 0..hash_var[i].len() { // iterate through every table
             return match hash_var[i][j].get(&term) {
                 Some(result) => vec![i, j, *result],
-                None => vec![0, 0, 0]
+                None => vec![]
             }
         }
     }
