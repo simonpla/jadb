@@ -256,7 +256,7 @@ impl Table<'_> {
     ///
     /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
     ///
-    /// table.delete(&mut hash_storeage);
+    /// table.delete(&mut hash_storage);
     /// ```
     pub fn delete(&self, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let info_path = format!("{}/{}", self.path, "info.jadb"); // create path of info file
