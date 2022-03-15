@@ -1,6 +1,6 @@
 debug/
 target/
-!target/doc/
+!target/doc/**
 **/*.rs.bk
 *.pdb
 tests/test_dir/
