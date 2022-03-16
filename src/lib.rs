@@ -1,12 +1,14 @@
-///# Docs
-///
-/// This is **j**ust **a**nother **d**ata**b**ase software.
-/// It aims to be simple and fast, while providing basic features like search and encryption. It also is designed to scale well on multiple systems.
-///
-///## Formatting
-///\n = delimiter
-///|o = old field content
-///
+//! # jadb
+//!
+//! This is **j**ust **a**nother **d**ata**b**ase software.
+//! It aims to be simple and fast, while providing basic features like search and encryption. It also is designed to scale well on multiple systems.
+//!
+//! ## Formatting
+//!
+//! | Operator | Function |
+//! | ----------- | ----------- |
+//! | \n | delimiter between fields |
+//! | \|o | replace with old content of row |
 
 // time
 extern crate chrono;
@@ -79,7 +81,7 @@ impl Table<'_> {
     ///
     /// ## Panic
     ///
-    /// A `0` is returned if everything ran ok, else it returns `1` with a short explanation of what went wrong.
+    /// A 0 is returned if everything ran ok, else it returns 1 with a short explanation of what went wrong.
     ///
     /// ## Examples
     /// ```
@@ -273,7 +275,16 @@ impl Table<'_> {
         }
     }
 }
-
+/// # LenType
+///
+/// This is needed for the Row::length() function to differentiate whether to count the fields in a row or the characters.
+///
+/// ## Examples
+/// ```
+/// use jadb;
+///
+/// let len_type = jadb::LenType::Characters;
+/// ```
 #[derive(PartialEq)]
 pub enum LenType {
     Fields,
@@ -281,6 +292,26 @@ pub enum LenType {
 }
 
 impl Row {
+    /// # length()
+    ///
+    /// This returns the length of a row in either characters or fields.
+    /// If you plan on using the length more than once without changing the row's content, consider saving it into a variable rather than using this function every time.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let length: i32 = row.length(table, jadb::LenType::Fields);
+    /// ```
     pub fn length(&self, table: Table, utype: LenType) -> i32 {
         let con = table.read(*self);
         let mut len: i32 = 0;
@@ -293,12 +324,50 @@ impl Row {
         }
         len
     }
+    /// # shash()
+    ///
+    /// This is used to compute the hash of a row.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let hash: u64 = row.shash(table);
+    /// ```
     pub fn shash(&self, table: Table) -> u64 {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         let a: Vec<String> = table.read(*self);
         a.hash(&mut hasher);
         hasher.finish()
     }
+    /// # shash_debug()
+    ///
+    /// The debug version of shash(). It tests the hashing for a given string.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let hash: u64 = row.shash_debug(table, "hey");
+    /// ```
     pub fn shash_debug(&self, table: Table, test_con: &str) -> u64 { // debug version with content to compare against
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         let a: Vec<String> = table.read(*self);
@@ -318,6 +387,31 @@ impl Row {
         assert_eq!(res_a, res_b); // check if are the same
         hasher.finish()
     }
+    /// # delete()
+    ///
+    /// This deletes a row from a table and the hash storage.
+    ///
+    /// ## Panic
+    ///
+    /// Returns 1 if the row can't be found, if the deletion was successful, 0 is returned.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// row.delete(table, &mut hash_storage);
+    /// ```
     pub fn delete(&self, table: Table, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let row_path = format!("{}/{}", table.path, self.pos); // create path of row
         return if std::path::Path::new(&row_path).exists() { // use it to check if row exists
@@ -335,16 +429,86 @@ impl Row {
 }
 
 impl Field {
+    /// # length()
+    ///
+    /// This returns the length of a field.
+    /// If you plan on using the length more than once without changing the fields's content, consider saving it into a variable rather than using this function every time.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let field = jadb::Field {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let length: i32 = field.length(table, row);
+    /// ```
     pub fn length(&self, table: Table, row: Row) -> i32 {
         let con = table.read(row);
         con[self.pos].len() as i32
     }
+    /// # shash()
+    ///
+    /// This is used to compute the hash of a field.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let field = jadb::Field {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let hash: u64 = field.shash(table, row);
+    /// ```
     pub fn shash(&self, table: Table, row: Row) -> u64 {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         let a: Vec<String> = table.read(row);
         a[self.pos].hash(&mut hasher);
         hasher.finish()
     }
+    /// # shash_debug()
+    ///
+    /// The debug version of shash(). It tests the hashing for a given string.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let field = jadb::Field {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let hash: u64 = field.shash_debug(table, row, "hey");
+    /// ```
     pub fn shash_debug(&self, table: Table, row: Row, test_con: &str) -> u64 { // debug version with content to compare against
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         let a: Vec<String> = table.read(row);
@@ -364,6 +528,35 @@ impl Field {
         assert_eq!(res_a, res_b); // check if are the same
         hasher.finish()
     }
+    /// # delete()
+    ///
+    /// This deletes a field from a row and the hash storage.
+    ///
+    /// ## Panic
+    ///
+    /// Returns 1 if the field can't be found, if the deletion was successful, 0 is returned.
+    ///
+    /// ## Examples
+    /// ```
+    /// use jadb;
+    ///
+    /// let table = jadb::Table {
+    ///   path: "path/to/table",
+    ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let field = jadb::Field {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// field.delete(table, row, &mut hash_storage);
+    /// ```
     pub fn delete(&self, table: Table, row: Row, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let mut wo_field = table.read(row); // read contents with field
         let to_delete = wo_field[self.pos].clone(); // save content to be deleted
@@ -374,6 +567,23 @@ impl Field {
     }
 }
 
+/// # init()
+///
+/// This functions initializes a table. The tables contents hashes are put into the hash storage.
+///
+/// ## Examples
+/// ```
+/// use jadb;
+///
+/// let table = jadb::Table {
+///   path: "path/to/table",
+///   id: 0,
+/// };
+///
+/// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+///
+/// jadb::init(table, &mut hash_storage);
+/// ```
 pub fn init(table: Table, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
     if hash_var.len() < table.id { // if table hash var is too small
         hash_var.resize(table.id, vec![std::collections::HashMap::new()]); // resize
@@ -398,6 +608,31 @@ pub fn init(table: Table, hash_var: &mut Vec<Vec<std::collections::HashMap<Strin
     0
 }
 
+/// # search()
+///
+/// Using this you can search all tables for a string.
+///
+/// The hash storage of all tables is searched for the hash of the String that aims to be found.
+///
+/// ## Panic
+///
+/// If the term isn't found, a empty vector will be returned. Else a vector consisting of the table id, the row position and the field position will be returned.
+///
+/// ## Examples
+/// ```
+/// use jadb;
+///
+/// let table = jadb::Table {
+///   path: "path/to/table",
+///   id: 0,
+/// };
+///
+/// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+///
+/// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+///
+/// let location: Vec<usize> = jadb::search(String::from("hi"), &mut hash_storage);
+/// ```
 pub fn search(term: String, hash_var: &Vec<Vec<std::collections::HashMap<String, usize>>>) -> Vec<usize> {
     for i in 0..hash_var.len() { // iterate through whole hash array
         for j in 0..hash_var[i].len() { // iterate through every table
