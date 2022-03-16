@@ -25,7 +25,7 @@ use std::hash::{Hash, Hasher};
 /// use jadb;
 ///
 /// let table = jadb::Table {
-///     path: "path/to/table",
+///     path: "mytable",
 ///     id: 0,
 /// };
 /// ```
@@ -88,11 +88,15 @@ impl Table<'_> {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
     /// table.create();
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn create(&self) -> i8 {
         if self.path.is_empty() { // can't create table without name
@@ -131,7 +135,7 @@ impl Table<'_> {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
@@ -141,11 +145,15 @@ impl Table<'_> {
     ///
     /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
     ///
+    /// table.create();
+    ///
     /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
     ///
     /// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
     ///
     /// table.write("|o\neveryone", row, &mut hash_storage); // take the first field at index 0 and replace it with old content, overwrite the second field with 'everyone'
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn write(&self, content: &str, row: Row, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         if content.is_empty() { // No need to create new row if no content
@@ -194,9 +202,26 @@ impl Table<'_> {
     /// ```
     /// use jadb;
     ///
-    /// // --snip-- you can look up how to create a table using table.create() and table.write() above
+    /// let table = jadb::Table {
+    ///   path: "mytable",
+    ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+    /// };
+    ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// table.create();
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
     ///
     /// let row_contents: Vec<String> = table.read(row);
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn read(&self, row: Row) -> Vec<String> {
         let content = std::fs::read_to_string(format!("{}/{}", self.path, row.pos)).expect("Couldn't read row");
@@ -218,15 +243,25 @@ impl Table<'_> {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
+    /// };
+    ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
     /// };
     ///
     /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
     ///
+    /// table.create();
+    ///
     /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
     ///
+    /// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+    ///
     /// let location: Vec<usize> = table.search(String::from("hi"), &mut hash_storage);
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn search(&self, term: String, hash_var: &Vec<Vec<std::collections::HashMap<String, usize>>>) -> Vec<usize> {
         for i in 0..hash_var[self.id].len() { // search every row in table
@@ -252,11 +287,19 @@ impl Table<'_> {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
+    /// let row = jadb::Row {
+    ///   pos: 0,
+     /// };
+    ///
     /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// table.create();
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
     ///
     /// table.delete(&mut hash_storage);
     /// ```
@@ -302,7 +345,7 @@ impl Row {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
@@ -310,7 +353,17 @@ impl Row {
     ///   pos: 0,
     /// };
     ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// table.create();
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+    ///
     /// let length: i32 = row.length(table, jadb::LenType::Fields);
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn length(&self, table: Table, utype: LenType) -> i32 {
         let con = table.read(*self);
@@ -333,7 +386,7 @@ impl Row {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
@@ -341,7 +394,17 @@ impl Row {
     ///   pos: 0,
     /// };
     ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// table.create();
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+    ///
     /// let hash: u64 = row.shash(table);
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn shash(&self, table: Table) -> u64 {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -358,7 +421,7 @@ impl Row {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
@@ -366,7 +429,17 @@ impl Row {
     ///   pos: 0,
     /// };
     ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// table.create();
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// table.write("hey", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+    ///
     /// let hash: u64 = row.shash_debug(table, "hey");
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn shash_debug(&self, table: Table, test_con: &str) -> u64 { // debug version with content to compare against
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -400,7 +473,7 @@ impl Row {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
@@ -410,7 +483,15 @@ impl Row {
     ///
     /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
     ///
+    /// table.create();
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+    ///
     /// row.delete(table, &mut hash_storage);
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn delete(&self, table: Table, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let row_path = format!("{}/{}", table.path, self.pos); // create path of row
@@ -439,7 +520,7 @@ impl Field {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
@@ -451,7 +532,17 @@ impl Field {
     ///   pos: 0,
     /// };
     ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// table.create();
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+    ///
     /// let length: i32 = field.length(table, row);
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn length(&self, table: Table, row: Row) -> i32 {
         let con = table.read(row);
@@ -466,7 +557,7 @@ impl Field {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
@@ -478,7 +569,17 @@ impl Field {
     ///   pos: 0,
     /// };
     ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// table.create();
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+    ///
     /// let hash: u64 = field.shash(table, row);
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn shash(&self, table: Table, row: Row) -> u64 {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -495,7 +596,7 @@ impl Field {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
@@ -507,7 +608,17 @@ impl Field {
     ///   pos: 0,
     /// };
     ///
+    /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
+    ///
+    /// table.create();
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// table.write("hey", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+    ///
     /// let hash: u64 = field.shash_debug(table, row, "hey");
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn shash_debug(&self, table: Table, row: Row, test_con: &str) -> u64 { // debug version with content to compare against
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -541,7 +652,7 @@ impl Field {
     /// use jadb;
     ///
     /// let table = jadb::Table {
-    ///   path: "path/to/table",
+    ///   path: "mytable",
     ///   id: 0,
     /// };
     ///
@@ -555,7 +666,15 @@ impl Field {
     ///
     /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
     ///
+    /// table.create();
+    ///
+    /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
+    ///
+    /// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+    ///
     /// field.delete(table, row, &mut hash_storage);
+    ///
+    /// table.delete(&mut hash_storage); // delete table afterwards
     /// ```
     pub fn delete(&self, table: Table, row: Row, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
         let mut wo_field = table.read(row); // read contents with field
@@ -576,13 +695,17 @@ impl Field {
 /// use jadb;
 ///
 /// let table = jadb::Table {
-///   path: "path/to/table",
+///   path: "mytable",
 ///   id: 0,
 /// };
 ///
 /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
 ///
+/// table.create();
+///
 /// jadb::init(table, &mut hash_storage);
+///
+/// table.delete(&mut hash_storage); // delete table afterwards
 /// ```
 pub fn init(table: Table, hash_var: &mut Vec<Vec<std::collections::HashMap<String, usize>>>) -> i8 {
     if hash_var.len() < table.id { // if table hash var is too small
@@ -623,15 +746,25 @@ pub fn init(table: Table, hash_var: &mut Vec<Vec<std::collections::HashMap<Strin
 /// use jadb;
 ///
 /// let table = jadb::Table {
-///   path: "path/to/table",
+///   path: "mytable",
 ///   id: 0,
+/// };
+///
+/// let row = jadb::Row {
+///   pos: 0,
 /// };
 ///
 /// let mut hash_storage: Vec<Vec<std::collections::HashMap<String, usize>>> = vec![vec![std::collections::HashMap::new()]];
 ///
+/// table.create();
+///
 /// jadb::init(table, &mut hash_storage); // Initialize the hash storage
 ///
+/// table.write("hi\nyou", row, &mut hash_storage); // write 'hi' and 'you' in seperate fields
+///
 /// let location: Vec<usize> = jadb::search(String::from("hi"), &mut hash_storage);
+///
+/// table.delete(&mut hash_storage); // delete table afterwards
 /// ```
 pub fn search(term: String, hash_var: &Vec<Vec<std::collections::HashMap<String, usize>>>) -> Vec<usize> {
     for i in 0..hash_var.len() { // iterate through whole hash array
