@@ -1,0 +1,12 @@
+name: Code Coverage
+on: [push]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+  steps:
+    - name: Install tarpaulin
+      run: cargo install cargo-tarpaulin
+    - name: run coverage tests and upload
+      run: |
+        cargo tarpaulin --no-count --skip-clean --out Xml &&
+        bash <(curl -s https://codecov.io/bash)
