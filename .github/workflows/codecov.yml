@@ -9,5 +9,5 @@ jobs:
       run: cargo install cargo-tarpaulin
     - name: run coverage tests and upload
       run: |
-        cargo tarpaulin --no-count --skip-clean --out Xml &&
+        cargo tarpaulin--skip-clean --out Xml &&
         bash <(curl -s https://codecov.io/bash)
