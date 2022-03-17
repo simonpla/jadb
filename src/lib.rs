@@ -114,7 +114,7 @@ impl Table<'_> {
             name = substr;
         }
         let info = format!("jadb database\ntablename: {}\ncreated on: {}\npath: {}", name, chrono::offset::Local::now(), self.path); // info file content
-        std::fs::create_dir(self.path).expect("Couldn't create db directory.");
+        std::fs::create_dir_all(self.path).expect("Couldn't create db directory.");
         std::fs::write(format!("{}/{}", self.path, "info.jadb"), info).expect("Couldn't create info file."); // write info file
         0 // if ok return 0
     }
