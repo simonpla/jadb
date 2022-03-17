@@ -3,7 +3,8 @@ on: [push]
 jobs:
   run:
     runs-on: ubuntu-latest
-  steps:
+    steps:
+    - uses: actions/checkout@v2
     - name: Install tarpaulin
       run: cargo install cargo-tarpaulin
     - name: run coverage tests and upload
