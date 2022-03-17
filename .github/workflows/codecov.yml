@@ -5,6 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: create folder
+      run: mkdir -p tests/test_dir/
     - name: Install tarpaulin
       run: cargo install cargo-tarpaulin
     - name: run coverage tests and upload
