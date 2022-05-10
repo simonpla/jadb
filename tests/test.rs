@@ -51,9 +51,15 @@ mod tests {
         assert_eq!(w_res, 0);
         assert_eq!(
             fs::read(format!("{}/{}", test_table.path, 0)).expect("Couldn't read test"),
-            vec![94, 100, 105, 240, 133, 194, 85, 56, 181, 144, 116, 45, 32, 57, 59, 77, 219, 230]
+            vec![63, 47, 135, 212, 103, 39, 146, 86, 145, 189, 43, 116, 98, 114, 112, 53, 101, 179]
         );
         assert_eq!(test_table.write("", test_row, &mut hasher, &cipher), 1);
+        for i in 1..20 {
+            assert_eq!(
+                test_table.write("hi", jadb::Row { pos: i }, &mut hasher, &cipher),
+                0
+            );
+        }
     }
     #[test]
     fn c_test_read() {
@@ -155,5 +161,30 @@ mod tests {
         assert_eq!(Path::new(&test_table.path).exists(), false);
 
         assert_eq!(test_table.delete(&mut hasher), 1);
+    }
+    #[test]
+    fn h_test_split_by_delimiter() {
+        // test for empty
+        let empty: Vec<&[u8]> = vec![];
+        assert_eq!(empty, jadb::split_by_delim(&[], &0u8));
+
+        // test internal
+        let input = [5, 1, 2, 3, 44, 1, 4, 44, 4, 7, 8, 44, 7];
+        assert_eq!(
+            vec![
+                &[5, 1, 2, 3][..],
+                &[1, 4][..],
+                &[4, 7, 8][..],
+                &[7][..]
+            ],
+            jadb::split_by_delim(&input, &44u8)
+        );
+
+        // test external
+        let input = [0, 1, 0, 2, 0];
+        assert_eq!(
+            vec![&[1][..], &[2][..], &[][..]],
+            jadb::split_by_delim(&input, &0u8)
+        );
     }
 }

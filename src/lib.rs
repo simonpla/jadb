@@ -194,8 +194,14 @@ impl Table<'_> {
             content, self.path, row.pos
         );
         let path = format!("{}/{}", self.path, row.pos); // path for row file
-        let mut con_w_form: Vec<u8> = Vec::with_capacity(content.len() * 5); // save contents here
+        let mut con_w_form: String = String::new();
         let mut hasher = std::collections::hash_map::DefaultHasher::new(); // for hashing the nonce string
+        let id = format!("{}-{}", self.id, row.pos); // unique id
+        id.hash(&mut hasher);
+        let id_hash = hasher.finish().to_string();
+        let nonce = GenericArray::<u8, aes_gcm::aead::generic_array::typenum::U12>::from_slice(
+            &id_hash[..12].as_bytes(),
+        ); // use first 12 characters of id hash for nonce
         if std::path::Path::new(&path).exists() {
             // if row already exists
             let mut con_str: Vec<&str> = content.split("\n").collect(); // split fields
@@ -206,61 +212,47 @@ impl Table<'_> {
                     con_str[i] = &con_old_row[i]; // overwrite '|o' with old content
                 }
 
-                let id = format!("{}-{}-{}", self.id, row.pos, i); // unique id
-                id.hash(&mut hasher);
-                let id_hash = hasher.finish().to_string();
-                let nonce =
-                    GenericArray::<u8, aes_gcm::aead::generic_array::typenum::U12>::from_slice(
-                        &id_hash[..12].as_bytes(),
-                    ); // use first 12 characters of id hash for nonce
-                con_w_form.append(
-                    &mut cipher
-                        .encrypt(nonce, con_str[i].as_ref())
-                        .expect("encryption failed"),
-                );
-                hasher = std::collections::hash_map::DefaultHasher::new(); // reset hasher
-                println!("raw contents: {:?}; nonce: {:?}", &con_w_form, nonce);
+                con_w_form.push_str(con_str[i]);
 
                 if i != con_str.len() - 1 {
-                    con_w_form.push(44); // add delimiter: 44 equals '\n'
+                    con_w_form.push_str("\n"); // add delimiter: newline
+                }
+
+                if hash_var[self.id].len() <= row.pos {
+                    // if row hash var is too small
+                    hash_var[self.id].resize(row.pos + 1, std::collections::HashMap::new());
+                    // resize
                 }
 
                 hash_var[self.id][row.pos].insert(con_str[i].parse().unwrap(), i);
                 // add new content to hash variable
             }
-            std::fs::write(&path, &con_w_form).expect("Couldn't write Row");
+
+            let con_enc = cipher
+                .encrypt(nonce, con_w_form.as_ref())
+                .expect("encryption failed");
+
+            std::fs::write(&path, &con_enc).expect("Couldn't write Row");
         } else {
             let con_str: Vec<&str> = content.split("\n").collect(); // split fields
 
             for i in 0..con_str.len() {
-                let id = format!("{}-{}-{}", self.id, row.pos, i); // unique id
-                id.hash(&mut hasher);
-                let id_hash = hasher.finish().to_string();
-                let nonce =
-                    GenericArray::<u8, aes_gcm::aead::generic_array::typenum::U12>::from_slice(
-                        &id_hash[..12].as_bytes(),
-                    ); // use first 12 characters of id hash for nonce
-
-                con_w_form.append(
-                    &mut cipher
-                        .encrypt(nonce, con_str[i].as_ref())
-                        .expect("encryption failed"),
-                );
-                hasher = std::collections::hash_map::DefaultHasher::new(); // reset hasher
-
-                if i != con_str.len() - 1 {
-                    con_w_form.push(44); // add delimiter: 44 equals '\n'
+                // add new contents to hash storage
+                if hash_var[self.id].len() <= row.pos {
+                    // if row hash var is too small
+                    hash_var[self.id].resize(row.pos + 1, std::collections::HashMap::new());
+                    // resize
                 }
 
                 hash_var[self.id][row.pos].insert(con_str[i].parse().unwrap(), i);
                 // add new content to hash variable
             }
-            std::fs::write(&path, &con_w_form).expect("Couldn't write Row");
-        }
-        if hash_var[self.id].len() < row.pos {
-            // if row hash var is too small
-            hash_var[self.id].resize(row.pos, std::collections::HashMap::new());
-            // resize
+
+            let con_enc = cipher
+                .encrypt(nonce, content.as_ref())
+                .expect("encryption failed");
+
+            std::fs::write(&path, &con_enc).expect("Couldn't write Row");
         }
         0 // if ok return 0
     }
@@ -302,49 +294,34 @@ impl Table<'_> {
     pub fn read(&self, row: Row, cipher: &Aes128Gcm) -> Vec<String> {
         let content =
             std::fs::read(format!("{}/{}", self.path, row.pos)).expect("Couldn't read row");
-        let mut counter = 0;
-
-        let mut read_array = vec![Vec::with_capacity(100); 100];
-
-        for i in &content {
-            if *i != 44 {
-                read_array[counter].push(*i);
-            } else {
-                read_array[counter].shrink_to_fit();
-                counter += 1;
-                if counter == read_array.len() {
-                    read_array.resize(counter * 2, Vec::with_capacity(100));
-                }
-            }
-        }
-        read_array.truncate(counter + 1);
-
-        let mut final_array: Vec<String> = Vec::with_capacity(read_array.len());
 
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        for i in 0..read_array.len() {
-            if read_array[i].len() > 0 {
-                let id = format!("{}-{}-{}", self.id, row.pos, i); // unique id
-                id.hash(&mut hasher);
-                let id_hash = hasher.finish(); // create hash
-                let id_hash_str = id_hash.to_string();
-                let nonce =
-                    GenericArray::<u8, aes_gcm::aead::generic_array::typenum::U12>::from_slice(
-                        &id_hash_str[..12].as_bytes(),
-                    ); // use first 12 characters of id hash for nonce
-                final_array.push(String::from(
-                    std::str::from_utf8(&*cipher.decrypt(nonce, read_array[i].as_ref()).expect(
-                        &*format!(
-                            "couldn't decrypt {:?} with nonce {:?}",
-                            read_array[i], nonce
-                        ),
-                    ))
-                    .expect("couldn't change to string"),
-                ));
-            }
-            hasher = std::collections::hash_map::DefaultHasher::new(); // reset hasher
-        }
 
+        let id = format!("{}-{}", self.id, row.pos); // unique id
+        id.hash(&mut hasher);
+        let id_hash = hasher.finish(); // create hash
+        let id_hash_str = id_hash.to_string();
+        let nonce = GenericArray::<u8, aes_gcm::aead::generic_array::typenum::U12>::from_slice(
+            &id_hash_str[..12].as_bytes(),
+        ); // use first 12 characters of id hash for nonce
+        let con_enc = cipher.decrypt(nonce, content.as_ref()).expect(&*format!(
+            "couldn't decrypt {:?} with nonce {:?} in row {} and table at {}",
+            content, nonce, row.pos, self.path
+        ));
+
+        println!("read not split enc {:?}", con_enc);
+        let con_split = split_by_delim(&con_enc, &10u8);
+        println!("read and split enc {:?}", con_split);
+
+        let mut final_array: Vec<String> = vec![];
+        for field in con_split {
+            final_array.push(
+                std::str::from_utf8(field)
+                    .expect(&*format!("could not convert {:?} to string", field))
+                    .parse()
+                    .unwrap(),
+            );
+        }
         final_array
     }
     /// # search()
@@ -865,7 +842,9 @@ impl Field {
         cipher: &Aes128Gcm,
     ) -> i8 {
         let mut wo_field = table.read(row, cipher); // read contents with field
+        println!("whole table {:?} self pos {}", wo_field, self.pos);
         let to_delete = wo_field[self.pos].clone(); // save content to be deleted
+        println!("to_delete {}", to_delete);
         wo_field.remove(self.pos); // remove it from the string
         hash_var[table.id][row.pos].remove(&*to_delete); // and the HashMap
         let wo_field_str: &str = &wo_field.join("\n"); // make it into one string
@@ -915,7 +894,7 @@ pub fn init(
     strpaths.shrink_to_fit(); // free up unused memory space
     if hash_var[table.id].len() < strpaths.len() {
         // if row hash var is too small
-        hash_var[table.id].resize(strpaths.len(), std::collections::HashMap::new());
+        hash_var[table.id].resize(strpaths.len() + 1, std::collections::HashMap::new());
         // resize
     }
     for i in 0..strpaths.len() {
@@ -991,4 +970,25 @@ pub fn search(
         }
     }
     vec![]
+}
+
+pub fn split_by_delim<'a, T>(input: &'a [T], delim: &T) -> Vec<&'a [T]>
+where
+    T: PartialEq<T>,
+{
+    let elements = input.iter().enumerate();
+    let (k, mut split_vectors) =
+        elements.fold((0, vec![]), |(prev_iterator, mut split_vectors), (curr_iterator, curr_element)| {
+            if curr_element == delim && curr_iterator > 0 {
+                let l = if &input[prev_iterator] == delim { prev_iterator + 1 } else { prev_iterator };
+                split_vectors.push(&input[l..curr_iterator]);
+                return (curr_iterator, split_vectors);
+            }
+            (prev_iterator, split_vectors)
+        });
+    if !input.is_empty() {
+        let m = if &input[k] == delim { k + 1 } else { k };
+        split_vectors.push(&input[m..]);
+    }
+    split_vectors
 }
